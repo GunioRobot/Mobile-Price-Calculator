@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width; initial-scale=1.0; user-scalable=no">
+    <title>Cash Calc.</title>
+    <style type="text/css" media="screen">
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #eee;
+            font-family: sans-serif;
+        }
+
+        section,article,header,footer { display: block; margin: 0; padding: 0; }
+
+        h1, p { margin: 0 .875em; }
+
+        h1 {
+            margin: .875em;
+            font-size: 1.75em;
+            line-height: .875em;
+        }
+        p, li {
+            margin: 0 0 1.5em;
+            font-size: 1em;
+            line-height: 1.5em;
+        }
+        p { margin: 0 1.5em 1.5em; }
+
+        li li { font-size: 1em; }
+
+        #header, #footer { padding: 1em 0; }
+        #header h1 { margin: 0 .875em; }
+
+        #footer p { margin: 0 1.5em; }
+
+        #content { overflow: auto; background: #fff; }
+
+        #item-list {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        #item-list li {
+            margin: 0;
+            padding: 1.111em 1.5em;
+            background: #d4e9ff;
+            border-top: 1px solid #aed1eb;
+            border-bottom: 1px solid #9fc1f2;
+            font-weight: 600;
+        }
+        #item-list label {
+            display: block;
+            font-size: 1.125em;
+            line-height: 1.3333em;
+        }
+        input {
+            margin-left: .5em;
+            min-width: 10em;
+            width: 6.25em;
+            font-size: 1em;
+        }
+        .remove {
+            display: inline-block;
+            height: 1em;
+            width: 1em;
+            background: gray;
+            border-radius: .75em;
+            color: #fff;
+            font-size: 1.25em;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+        }
+        #add-another a {
+            padding: .1875em .3125em;
+            background: #9fc1f2;
+            -webkit-border-radius: 0 0 .3125em .3125em;
+            -moz-border-radius: 0 0 .3125em .3125em;
+            border-radius: 0 0 .3125em .3125em;
+        }
+        #add-another a:link, #add-another a:visited { color: #111; text-decoration: none; }
+        #add-another a:hover, #add-another a:focus { color: #aed1eb; text-decoration: none; }
+        @media screen and (max-device-width: 320px) {
+            body { font-size: 137.5%; }
+
+            #add-another { text-align: right; }
+            #total { position: relative; right: 0; }
+        }
+    </style>
+</head>
+<body id="home">
+
+    <section id="cashCalc">
+
+        <header id="header">
+            <h1>Cash Calc.</h1>
+        </header>
+
+        <article id="content">
+            <form id="item-form">
+                <ul id="item-list">
+                    <li class="item" id="list-item-1">
+                        <label for="item-id-1">Item #1</label> 
+                        $<input type="number" name="item-id-1" value="" min="0" step="1" placeholder="Item Price" id="item-id-1">
+                    </li>
+                </ul>
+            </form>
+            
+            <p id="add-another"><a href="">Add Item +</a></p>
+
+            <footer id="content-footer">
+                <h1>My Total: <span id="total">$0.00</span></h1>
+            </footer>
+        </article>
+
+        <footer id="footer">
+            <p>Copyright &copy; 2010, <a href="http://daniellacy.com/" target="_blank">Daniel Lacy</a></p>
+        </footer>
+
+    </section>
+
+    <!-- Scripts -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8">
+        /*
+         * Global settings and variables
+        */
+        var _global = {
+            itemBin     : $("#item-list"),
+            itemArray   : [],
+            itemCount   : 1,
+            costTotal   : 0
+        },
+
+        /*
+         * App functions.
+        */
+        cashCalc = {
+            /*
+             * Add another row to the Items List
+            */
+            addRow : function() {
+                var newItem = $("<li/>"),
+                    itemNo  = _global.itemCount + 1,
+                    itemId  = "item-id-" + itemNo;
+
+                newItem.addClass("item").attr("id", "list-item-" + itemNo).html(
+                    '<label for="' + itemId + '" default>Item #' + itemNo + '</label> ' +
+                    '$<input type="number" name="' + itemId + '" class="price" value="" min="0" step="1" placeholder="Item Price" id="' + itemId + '" autofocus> ' +
+                    '<a href="#list-item-' + (itemNo - 1) + '" title="Remove Item" class="remove">&#0215;</a>'
+                    );
+
+                _global.itemBin.append(newItem);
+
+                _global.itemCount++;
+
+                cashCalc.updateTotal();
+            },
+
+            /*
+             * Remove a row from the Items List
+            */
+            removeRow : function(itemId) {
+                $("#" + itemId).fadeOut(400, function() {
+                    $("#" + itemId).remove();
+
+                    _global.itemCount--;
+
+                    cashCalc.updateTotal();
+
+                    cashCalc.updateLabels();
+                });
+            },
+
+            /*
+             * Re-lable an item
+            */
+            changeLable : function(itemId) {
+                var form        = $("<form/>"),
+                    labelInput  = $("<input/>");
+
+                labelInput.attr({
+                    "type" : "text",
+                    "placeholder" : "Enter a new label name"
+                });
+
+                form.attr("list-item-id", itemId).append(labelInput + '<input type="submit" value="Done">');
+
+                $("#" + itemId).fadeOut(400, function() {
+                    $("#" + itemId).remove();
+                });
+            },
+
+            /*
+             * Update all default labels to have proper counts.
+            */
+            updateLabels : function() {
+                var defaultLabels   = _global.itemBin.find("label[default]"),
+                    labelsLength    = defaultLabels.length,
+                    labelIds        = [];
+
+                for (var i = 0; i < labelsLength; i++) {
+                    var thisLabel = $(defaultLabels[i]);
+
+                    labelIds.push(thisLabel.parent().attr("id"));
+                }
+                
+                console.log(labelIds);
+            },
+
+            /*
+             * Update total
+            */
+            updateTotal : function() {
+                var subTotal = 0;
+
+                for (var i = 0; i < _global.itemCount; i++) {
+                    var thisItem    = $("#list-item-" + i),
+                        thisVal     = thisItem.find("input").val() ? parseFloat(thisItem.find("input").val()) : 0;
+
+                    subTotal = subTotal + thisVal;
+                }
+
+                subTotal = subTotal.toFixed(2);
+
+                _global.costTotal = subTotal;
+                $("#total").text("$" + subTotal);
+            }
+        };
+
+        /*
+         * Events
+        */
+        $("#add-another a").live("click", function() {
+            $(this).attr("href", "#list-item-" + (_global.itemCount));
+
+            cashCalc.addRow();
+        });
+
+        $(".remove").live("click", function() {
+            cashCalc.removeRow($(this).parent().attr("id"));
+        });
+
+        $("#item-form").live("change", function() {
+            cashCalc.updateTotal();
+        });
+
+        $(document).ready(function() {
+            if (window.location.hash) {
+                window.location = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            }
+
+            _global.itemArray.push(_global.itemBin.find("li").attr("id"));
+
+            $("#add-another a").attr("href", "#list-item-" + (_global.itemCount));
+
+            cashCalc.updateTotal();
+        });
+        
+    </script>
+
+</body>
+</html>
